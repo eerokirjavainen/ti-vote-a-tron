@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { fixedOutcomes, normalizePlanet, planetOutcomes, riderResult } from "../../src/core/agenda";
+import {
+  agendaResult,
+  fixedOutcomes,
+  needsSpeakerDecision,
+  normalizePlanet,
+  planetOutcomes,
+  riderResult,
+} from "../../src/core/agenda";
 import { tally } from "../../src/core/tally";
 
 describe("fixedOutcomes", () => {
@@ -41,24 +48,65 @@ describe("planets", () => {
   });
 });
 
+describe("agendaResult", () => {
+  const tied = new Map([["Alice", 4], ["Bob", 4], ["Cara", 1]]);
+
+  it("picks the single leading outcome", () => {
+    expect(agendaResult(new Map([["For", 5], ["Against", 3]]))).toEqual({ leaders: ["For"], winner: "For" });
+  });
+
+  it("ignores a speaker choice when there is no tie", () => {
+    expect(agendaResult(new Map([["For", 5], ["Against", 3]]), "Against").winner).toBe("For");
+  });
+
+  it("waits for the speaker on a tie", () => {
+    const result = agendaResult(tied);
+    expect(result).toEqual({ leaders: ["Alice", "Bob"], winner: null });
+    expect(needsSpeakerDecision(result)).toBe(true);
+  });
+
+  it("uses the speaker's choice among tied outcomes", () => {
+    const result = agendaResult(tied, "Bob");
+    expect(result.winner).toBe("Bob");
+    expect(needsSpeakerDecision(result)).toBe(false);
+  });
+
+  it("ignores a speaker choice outside the tie", () => {
+    expect(agendaResult(tied, "Cara").winner).toBeNull();
+  });
+
+  it("treats zero votes for every outcome as a tie", () => {
+    expect(agendaResult(new Map([["For", 0], ["Against", 0]])).leaders).toEqual(["For", "Against"]);
+  });
+
+  it("has no winner and no decision when there are no outcomes", () => {
+    const result = agendaResult(new Map());
+    expect(result).toEqual({ leaders: [], winner: null });
+    expect(needsSpeakerDecision(result)).toBe(false);
+  });
+});
+
 describe("riderResult", () => {
-  it("succeeds when the prediction is the single leading outcome", () => {
-    expect(riderResult("For", new Map([["For", 5], ["Against", 3]]))).toBe("success");
+  const tied = new Map([["Alice", 4], ["Bob", 4], ["Cara", 1]]);
+
+  it("succeeds when the prediction wins", () => {
+    expect(riderResult("For", agendaResult(new Map([["For", 5], ["Against", 3]])))).toBe("success");
   });
 
-  it("fails when another outcome leads", () => {
-    expect(riderResult("Against", new Map([["For", 5], ["Against", 3]]))).toBe("failure");
+  it("fails when another outcome wins", () => {
+    expect(riderResult("Against", agendaResult(new Map([["For", 5], ["Against", 3]])))).toBe("failure");
   });
 
-  it("leaves a tie including the prediction to the speaker", () => {
-    expect(riderResult("Bob", new Map([["Alice", 4], ["Bob", 4], ["Cara", 1]]))).toBe("tie");
+  it("is pending until the speaker breaks a tie", () => {
+    expect(riderResult("Bob", agendaResult(tied))).toBe("pending");
   });
 
-  it("fails when the prediction is outside a tie", () => {
-    expect(riderResult("Cara", new Map([["Alice", 4], ["Bob", 4], ["Cara", 1]]))).toBe("failure");
+  it("follows the speaker's tie-break", () => {
+    expect(riderResult("Bob", agendaResult(tied, "Bob"))).toBe("success");
+    expect(riderResult("Alice", agendaResult(tied, "Bob"))).toBe("failure");
   });
 
   it("fails when no outcome received votes", () => {
-    expect(riderResult("mecatolrex", new Map())).toBe("failure");
+    expect(riderResult("mecatolrex", agendaResult(new Map()))).toBe("failure");
   });
 });

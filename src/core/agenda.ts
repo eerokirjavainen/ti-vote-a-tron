@@ -77,16 +77,35 @@ export function agendaOutcomes(agenda: Agenda, players: string[], ballots: Ballo
   return fixedOutcomes(agenda.type, players) ?? planetOutcomes(ballots);
 }
 
-export type RiderResult = "success" | "failure" | "tie";
+export interface AgendaResult {
+  /** Outcomes sharing the highest total; more than one means a tie. */
+  leaders: string[];
+  /** The winning outcome, or null while a tie awaits the speaker's decision. */
+  winner: string | null;
+}
 
 /**
- * Compare a rider's prediction with the vote totals. A tie for the lead that
- * includes the prediction is left to the speaker to break.
+ * Decide an agenda from its totals. When outcomes tie for the lead, the
+ * speaker's choice among them decides; any other choice is ignored.
  */
-export function riderResult(prediction: string, totals: Map<string, number>): RiderResult {
+export function agendaResult(totals: Map<string, number>, speakerChoice: string | null = null): AgendaResult {
   const leaders = totals.size ? leadingOutcomes(totals) : [];
-  if (!leaders.includes(prediction)) {
-    return "failure";
+  if (leaders.length === 1) {
+    return { leaders, winner: leaders[0] };
   }
-  return leaders.length === 1 ? "success" : "tie";
+  return { leaders, winner: speakerChoice !== null && leaders.includes(speakerChoice) ? speakerChoice : null };
+}
+
+export function needsSpeakerDecision(result: AgendaResult): boolean {
+  return result.winner === null && result.leaders.length > 1;
+}
+
+export type RiderResult = "success" | "failure" | "pending";
+
+/** Compare a rider's prediction with the agenda's winning outcome. */
+export function riderResult(prediction: string, result: AgendaResult): RiderResult {
+  if (needsSpeakerDecision(result)) {
+    return "pending";
+  }
+  return prediction === result.winner ? "success" : "failure";
 }

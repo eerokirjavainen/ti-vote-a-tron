@@ -28,8 +28,9 @@ Hand the device to each remaining player when prompted. On their ballot, a
 player chooses an outcome, their votes, and optional bonus votes (+x). Bonus
 votes are added to the outcome's total but do not use the player's remaining
 votes. After everyone votes, return
-it to the speaker to reveal totals and whether each rider succeeded. A rider
-whose prediction is tied for the lead is left for the speaker to decide. Use the optional ballot breakdown only when
+it to the speaker to reveal totals. If outcomes tie for the most votes, the
+speaker chooses the winning outcome among them before continuing. The results
+then show whether each rider succeeded. Use the optional ballot breakdown only when
 resolving an outcome requires it.
 
 Other commands:

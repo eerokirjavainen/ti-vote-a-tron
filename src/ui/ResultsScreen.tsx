@@ -1,12 +1,19 @@
 import { useState } from "react";
-import { AGENDA_COUNT, type RiderResult, agendaOutcomes, riderResult } from "../core/agenda";
+import {
+  AGENDA_COUNT,
+  type RiderResult,
+  agendaOutcomes,
+  agendaResult,
+  needsSpeakerDecision,
+  riderResult,
+} from "../core/agenda";
 import type { Session } from "../core/session";
 import { type Ballot, tally } from "../core/tally";
 
 const RIDER_RESULT_LABELS: Record<RiderResult, string> = {
   success: "Success",
   failure: "Failure",
-  tie: "Tie — speaker decides",
+  pending: "Awaiting speaker",
 };
 
 function describeBallot(ballot: Ballot): string {
@@ -16,9 +23,12 @@ function describeBallot(ballot: Ballot): string {
 
 export function ResultsScreen({ session, onContinue }: { session: Session; onContinue: () => void }) {
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [speakerChoice, setSpeakerChoice] = useState<string | null>(null);
   const agenda = session.agenda!;
   const outcomes = agendaOutcomes(agenda, session.players, session.ballots);
   const totals = tally(outcomes, session.ballots);
+  const result = agendaResult(totals, speakerChoice);
+  const tied = result.leaders.length > 1;
   const lastAgenda = session.agendaNumber >= AGENDA_COUNT;
 
   return (
@@ -38,18 +48,42 @@ export function ResultsScreen({ session, onContinue }: { session: Session; onCon
         <p className="muted">No ballots were cast.</p>
       )}
 
+      {tied && (
+        <fieldset className="tie-break">
+          <legend>Tie — the speaker decides the outcome</legend>
+          {result.leaders.map((outcome) => (
+            <label className="choice" key={outcome}>
+              <input
+                type="radio"
+                name="tie-break"
+                checked={speakerChoice === outcome}
+                onChange={() => setSpeakerChoice(outcome)}
+              />
+              {outcome}
+            </label>
+          ))}
+        </fieldset>
+      )}
+
+      {result.winner !== null && (
+        <p className="winner">
+          Outcome: <strong>{result.winner}</strong>
+          {tied && <span className="muted"> (speaker's decision)</span>}
+        </p>
+      )}
+
       {agenda.riders.length > 0 && (
         <>
           <h3>Riders</h3>
           <ul className="breakdown">
             {agenda.riders.map((rider) => {
-              const result = riderResult(rider.prediction, totals);
+              const status = riderResult(rider.prediction, result);
               return (
                 <li key={rider.player}>
                   <span>
                     {rider.player} → {rider.prediction}
                   </span>
-                  <span className={`rider-result ${result}`}>{RIDER_RESULT_LABELS[result]}</span>
+                  <span className={`rider-result ${status}`}>{RIDER_RESULT_LABELS[status]}</span>
                 </li>
               );
             })}
@@ -77,7 +111,8 @@ export function ResultsScreen({ session, onContinue }: { session: Session; onCon
           <button onClick={() => setShowBreakdown(true)}>Reveal who voted for each outcome</button>
         ))}
 
-      <button className="primary" onClick={onContinue}>
+      {needsSpeakerDecision(result) && <p className="muted">Choose the outcome of the tie to continue.</p>}
+      <button className="primary" disabled={needsSpeakerDecision(result)} onClick={onContinue}>
         {lastAgenda ? "Finish agenda phase" : "Set up the second agenda"}
       </button>
     </section>

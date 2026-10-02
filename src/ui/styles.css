@@ -212,6 +212,14 @@ button.icon {
   color: var(--error);
 }
 
-.rider-result.tie {
+.rider-result.pending {
   color: var(--muted);
+}
+
+.tie-break {
+  border-color: var(--accent);
+}
+
+.winner {
+  font-size: 1.1rem;
 }
