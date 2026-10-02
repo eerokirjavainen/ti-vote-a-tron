@@ -12,6 +12,8 @@ export function BallotScreen({ session, onCast }: { session: Session; onCast: (s
   const agenda = session.agenda!;
   const [outcome, setOutcome] = useState("");
   const [votes, setVotes] = useState("");
+  // Bonus votes are rare, so the field stays hidden until the player asks for it.
+  const [hasBonus, setHasBonus] = useState(false);
   const [bonus, setBonus] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +27,7 @@ export function BallotScreen({ session, onCast }: { session: Session; onCast: (s
       if (!Number.isInteger(count) || count < 0 || count > available) {
         throw new Error(`Enter a whole number of votes from 0 to ${available}`);
       }
-      onCast(castBallot(session, outcome, count, parseCount(bonus, 0)));
+      onCast(castBallot(session, outcome, count, hasBonus ? parseCount(bonus, 0) : 0));
     } catch (caught) {
       setError((caught as Error).message);
     }
@@ -40,33 +42,43 @@ export function BallotScreen({ session, onCast }: { session: Session; onCast: (s
 
       <OutcomeInput label="Outcome" type={agenda.type} players={session.players} value={outcome} onChange={setOutcome} />
 
-      <div className="vote-counts">
-        <label>
-          Votes (0–{available})
-          <input
-            type="number"
-            min={0}
-            max={available}
-            step={1}
-            inputMode="numeric"
-            value={votes}
-            onChange={(event) => setVotes(event.target.value)}
-          />
-        </label>
-        <label>
-          Bonus votes (+x)
-          <input
-            type="number"
-            min={0}
-            step={1}
-            inputMode="numeric"
-            placeholder="0"
-            value={bonus}
-            onChange={(event) => setBonus(event.target.value)}
-          />
-        </label>
-      </div>
-      <p className="muted">Bonus votes are added to the outcome without using your remaining votes.</p>
+      <label>
+        Votes (0–{available})
+        <input
+          type="number"
+          min={0}
+          max={available}
+          step={1}
+          inputMode="numeric"
+          value={votes}
+          onChange={(event) => setVotes(event.target.value)}
+        />
+      </label>
+
+      <label className="choice">
+        <input type="checkbox" checked={hasBonus} onChange={(event) => setHasBonus(event.target.checked)} />
+        Add bonus votes
+      </label>
+      {hasBonus && (
+        <div className="field">
+          <label>
+            Bonus votes
+            <input
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              autoFocus
+              aria-describedby="bonus-hint"
+              value={bonus}
+              onChange={(event) => setBonus(event.target.value)}
+            />
+          </label>
+          <p id="bonus-hint" className="hint">
+            Added to the outcome without using your remaining votes.
+          </p>
+        </div>
+      )}
 
       {error && <p className="error">{error}</p>}
       <button type="submit" className="primary">
