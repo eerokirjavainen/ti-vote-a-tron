@@ -1,4 +1,4 @@
-import type { Ballot } from "./tally";
+import { type Ballot, leadingOutcomes } from "./tally";
 
 export const AGENDA_COUNT = 2;
 
@@ -75,4 +75,18 @@ export function planetOutcomes(ballots: Ballot[]): string[] {
 /** Outcomes to tally for an agenda once all ballots are in. */
 export function agendaOutcomes(agenda: Agenda, players: string[], ballots: Ballot[]): string[] {
   return fixedOutcomes(agenda.type, players) ?? planetOutcomes(ballots);
+}
+
+export type RiderResult = "success" | "failure" | "tie";
+
+/**
+ * Compare a rider's prediction with the vote totals. A tie for the lead that
+ * includes the prediction is left to the speaker to break.
+ */
+export function riderResult(prediction: string, totals: Map<string, number>): RiderResult {
+  const leaders = totals.size ? leadingOutcomes(totals) : [];
+  if (!leaders.includes(prediction)) {
+    return "failure";
+  }
+  return leaders.length === 1 ? "success" : "tie";
 }

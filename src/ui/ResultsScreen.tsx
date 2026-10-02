@@ -1,7 +1,13 @@
 import { useState } from "react";
-import { AGENDA_COUNT, agendaOutcomes } from "../core/agenda";
+import { AGENDA_COUNT, type RiderResult, agendaOutcomes, riderResult } from "../core/agenda";
 import type { Session } from "../core/session";
-import { type Ballot, leadingOutcomes, tally } from "../core/tally";
+import { type Ballot, tally } from "../core/tally";
+
+const RIDER_RESULT_LABELS: Record<RiderResult, string> = {
+  success: "Success",
+  failure: "Failure",
+  tie: "Tie — speaker decides",
+};
 
 function describeBallot(ballot: Ballot): string {
   const votes = ballot.bonus ? `${ballot.votes} + ${ballot.bonus} bonus` : `${ballot.votes}`;
@@ -13,15 +19,7 @@ export function ResultsScreen({ session, onContinue }: { session: Session; onCon
   const agenda = session.agenda!;
   const outcomes = agendaOutcomes(agenda, session.players, session.ballots);
   const totals = tally(outcomes, session.ballots);
-  const leaders = outcomes.length ? leadingOutcomes(totals) : [];
   const lastAgenda = session.agendaNumber >= AGENDA_COUNT;
-
-  function riderStatus(prediction: string): string {
-    if (!leaders.includes(prediction)) {
-      return "not leading";
-    }
-    return leaders.length === 1 ? "leading" : "tied — speaker decides";
-  }
 
   return (
     <section className="card">
@@ -44,14 +42,17 @@ export function ResultsScreen({ session, onContinue }: { session: Session; onCon
         <>
           <h3>Riders</h3>
           <ul className="breakdown">
-            {agenda.riders.map((rider) => (
-              <li key={rider.player}>
-                <span>
-                  {rider.player} → {rider.prediction}
-                </span>
-                <span className="muted">{riderStatus(rider.prediction)}</span>
-              </li>
-            ))}
+            {agenda.riders.map((rider) => {
+              const result = riderResult(rider.prediction, totals);
+              return (
+                <li key={rider.player}>
+                  <span>
+                    {rider.player} → {rider.prediction}
+                  </span>
+                  <span className={`rider-result ${result}`}>{RIDER_RESULT_LABELS[result]}</span>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}

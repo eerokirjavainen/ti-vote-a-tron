@@ -8,6 +8,7 @@
   --accent: #2f5bd3;
   --accent-text: #ffffff;
   --error: #b42318;
+  --success: #1a7f37;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.5;
 }
@@ -22,6 +23,7 @@
     --accent: #6d8ff0;
     --accent-text: #0b0d12;
     --error: #f97066;
+    --success: #4ac26b;
   }
 }
 
@@ -196,4 +198,20 @@ button.icon {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+.rider-result {
+  font-weight: 600;
+}
+
+.rider-result.success {
+  color: var(--success);
+}
+
+.rider-result.failure {
+  color: var(--error);
+}
+
+.rider-result.tie {
+  color: var(--muted);
 }
