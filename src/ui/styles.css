@@ -1,30 +1,22 @@
+/* Deep space is the setting, so the app is always dark. */
 :root {
-  color-scheme: light dark;
-  --bg: #f4f5f7;
-  --surface: #ffffff;
-  --text: #1c1f24;
-  --muted: #5d6470;
-  --border: #d5d9e0;
-  --accent: #2f5bd3;
-  --accent-text: #ffffff;
-  --error: #b42318;
-  --success: #1a7f37;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+  --void: #07040b;
+  --panel: rgba(22, 11, 24, 0.8);
+  --field: rgba(10, 4, 10, 0.7);
+  --text: #e9ecf5;
+  --muted: #9aa3bd;
+  --line: rgba(230, 180, 190, 0.22);
+  --gold: #e8be6a;
+  --gold-deep: #a9792e;
+  --gold-line: rgba(232, 190, 106, 0.55);
+  --accent-text: #1a1206;
+  --error: #ff8a7a;
+  --success: #74e3ae;
+  --cut: 14px;
+  --display: "Michroma", "Eurostile", "Arial Black", sans-serif;
+  font-family: "Saira", system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.5;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111318;
-    --surface: #1b1e25;
-    --text: #e8eaee;
-    --muted: #9aa2ae;
-    --border: #343a45;
-    --accent: #6d8ff0;
-    --accent-text: #0b0d12;
-    --error: #f97066;
-    --success: #4ac26b;
-  }
 }
 
 * {
@@ -33,42 +25,295 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--void);
   color: var(--text);
 }
 
+/* ---------- Backdrop ---------- */
+
+.cosmos {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 120%, #2a0d1c 0%, var(--void) 62%);
+}
+
+/* Layers overhang the window so their edges stay hidden while they drift. */
+.layer {
+  position: absolute;
+  inset: -32px;
+  transform: translate3d(
+    calc(var(--px, 0) * var(--depth) * -1),
+    calc(var(--py, 0) * var(--depth) * -1),
+    0
+  );
+  transition: transform 1.4s cubic-bezier(0.2, 0.6, 0.2, 1);
+  will-change: transform;
+}
+
+.nebula {
+  position: absolute;
+  inset: -10%;
+  background:
+    radial-gradient(42% 32% at 18% 22%, rgba(170, 36, 60, 0.36), transparent 70%),
+    radial-gradient(35% 28% at 32% 36%, rgba(230, 96, 70, 0.16), transparent 70%),
+    radial-gradient(45% 35% at 85% 78%, rgba(130, 24, 70, 0.32), transparent 70%),
+    radial-gradient(30% 24% at 68% 92%, rgba(90, 36, 140, 0.22), transparent 70%);
+}
+
+.starfield {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.twinkle {
+  animation: twinkle 5s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.galaxy {
+  position: absolute;
+  aspect-ratio: 1;
+}
+
+/* The disk lies flat, so the tilt squashes it far more than the bulge. */
+.galaxy-plane,
+.galaxy-bulge {
+  position: absolute;
+  inset: 0;
+}
+
+.galaxy-plane {
+  transform: scaleY(var(--tilt));
+}
+
+.galaxy-bulge {
+  width: 100%;
+  height: 100%;
+  transform: scaleY(calc(var(--tilt) + 0.32));
+}
+
+.galaxy-spin,
+.galaxy-lane {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* A slow, steady turn; real galaxies take far longer, but this reads as alive. */
+.galaxy-spin {
+  animation: spin 420s linear infinite;
+  will-change: transform;
+}
+
+.galaxy-far .galaxy-spin {
+  animation-duration: 300s;
+  animation-direction: reverse;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.galaxy-near {
+  --tilt: 0.4;
+  top: -38vmin;
+  right: -42vmin;
+  width: max(140vmin, 680px);
+  transform: rotate(-24deg);
+  opacity: 0.92;
+}
+
+/* Keep the large galaxy clear of the tagline on narrow screens. */
+@media (max-width: 600px) {
+  .galaxy-near {
+    top: -250px;
+    right: -310px;
+    opacity: 0.75;
+  }
+}
+
+.galaxy-far {
+  --tilt: 0.55;
+  bottom: 10vh;
+  left: 2vw;
+  width: max(32vmin, 170px);
+  transform: rotate(38deg);
+  opacity: 0.65;
+}
+
+/* ---------- Layout and title ---------- */
+
 .app {
-  max-width: 560px;
+  max-width: 580px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 32px 16px 48px;
 }
 
 .app-header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0 36px;
+  text-align: center;
 }
 
-.app-header h1 {
+.title {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   margin: 0;
-  font-size: 1.4rem;
+  padding: 18px 0;
+  font-family: var(--display);
+  font-weight: 400;
+  line-height: 1;
 }
 
-.agenda-counter,
+.title-game {
+  position: relative;
+  font-size: clamp(0.7rem, 2.6vw, 0.9rem);
+  letter-spacing: 0.42em;
+  margin-right: -0.42em;
+  color: #c6cde6;
+}
+
+.title-name {
+  position: relative;
+  font-size: clamp(2.1rem, 10.5vw, 3.9rem);
+  letter-spacing: 0.04em;
+  background: linear-gradient(
+    100deg,
+    #8a5a1c 0%,
+    #f6dc9a 22%,
+    #fff7de 30%,
+    #e0ae55 42%,
+    #9b6a26 58%,
+    #f1cf83 78%,
+    #b8862f 100%
+  );
+  background-size: 220% 100%;
+  background-position: 0% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px rgba(232, 190, 106, 0.28)) drop-shadow(0 2px 0 rgba(0, 0, 0, 0.6));
+  animation: gleam 2.6s cubic-bezier(0.3, 0, 0.2, 1) 0.2s both;
+}
+
+@keyframes gleam {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
+}
+
+.tagline {
+  max-width: 34ch;
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+/* During play the title steps aside for the ballot. */
+.app-header.compact {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 22px;
+  text-align: left;
+}
+
+.compact .title {
+  align-items: flex-start;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+.compact .title-game {
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+}
+
+.compact .title-name {
+  font-size: 1.45rem;
+  animation: none;
+}
+
+.agenda-counter {
+  font-family: var(--display);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
 .muted {
   color: var(--muted);
 }
 
+/* ---------- Panels ---------- */
+
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  gap: 16px;
+  padding: 26px 24px;
+  background: linear-gradient(165deg, rgba(48, 22, 40, 0.84), var(--panel) 45%);
+  border: 1px solid var(--line);
+  border-top-color: var(--gold-line);
+  clip-path: polygon(
+    var(--cut) 0,
+    100% 0,
+    100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%,
+    0 100%,
+    0 var(--cut)
+  );
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Gold edges along the two chamfered corners. */
+.card::before,
+.card::after {
+  content: "";
+  position: absolute;
+  width: calc(var(--cut) * 1.4142);
+  height: 2px;
+  background: var(--gold);
+  transform: rotate(-45deg);
+}
+
+.card::before {
+  top: calc(var(--cut) - 1px);
+  left: -1px;
+  transform-origin: 0 0;
+}
+
+.card::after {
+  right: -1px;
+  bottom: calc(var(--cut) - 1px);
+  transform-origin: 100% 100%;
+  background: var(--line);
 }
 
 .card h2,
@@ -77,29 +322,68 @@ body {
   margin: 0;
 }
 
+.card h2 {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  line-height: 1.35;
+}
+
+.card h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+
 .handoff {
   align-items: center;
   text-align: center;
-  padding: 40px 20px;
+  padding: 48px 24px;
 }
+
+.handoff h2 {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.voter-name {
+  display: block;
+  margin-top: 10px;
+  font-size: clamp(1.6rem, 7vw, 2.2rem);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Form controls ---------- */
 
 label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   font-weight: 500;
 }
 
 fieldset {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 10px 14px 14px;
+}
+
+legend {
+  padding: 0 6px;
+  font-weight: 600;
+  color: var(--gold);
 }
 
 label.choice {
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-weight: 400;
 }
 
@@ -110,21 +394,58 @@ button {
   color: inherit;
 }
 
+input[type="radio"],
+input[type="checkbox"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  accent-color: var(--gold);
+}
+
 input:not([type="radio"]):not([type="checkbox"]),
 select {
   width: 100%;
-  padding: 8px 10px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  transition: border-color 0.15s;
+}
+
+input::placeholder {
+  color: rgba(154, 163, 189, 0.6);
+}
+
+select option {
+  background: #170b16;
+}
+
+input:not([type="radio"]):not([type="checkbox"]):focus,
+select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(232, 190, 106, 0.18);
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 
 button {
-  padding: 10px 14px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  padding: 11px 16px;
+  background: rgba(230, 180, 190, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 2px;
   cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+button:hover:not(:disabled) {
+  background: rgba(230, 180, 190, 0.12);
+  border-color: rgba(230, 180, 190, 0.4);
 }
 
 button:disabled {
@@ -133,15 +454,30 @@ button:disabled {
 }
 
 button.primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  padding: 13px 22px;
+  background: linear-gradient(180deg, #f4d58e, var(--gold) 45%, #c99341);
+  border: none;
   color: var(--accent-text);
-  font-weight: 600;
+  font-family: var(--display);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+button.primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fbe3a8, #f0c97a 45%, #d6a04d);
+}
+
+button.primary:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-text);
 }
 
 button.icon {
-  padding: 8px 12px;
+  padding: 8px 13px;
 }
+
+/* ---------- Setup ---------- */
 
 .player-rows {
   display: flex;
@@ -157,41 +493,11 @@ button.icon {
 
 .agenda-title {
   font-style: italic;
+  color: #c6cde6;
 }
 
 .error {
   color: var(--error);
-}
-
-.totals,
-.breakdown {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.totals li,
-.breakdown li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.totals strong {
-  font-variant-numeric: tabular-nums;
-}
-
-.rider {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 6px 0;
-}
-
-.rider + .rider {
-  border-top: 1px solid var(--border);
 }
 
 .field {
@@ -204,6 +510,75 @@ button.icon {
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 400;
+}
+
+.rider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.rider + .rider {
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- Results ---------- */
+
+.totals,
+.breakdown {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Each total carries a bar scaled to the leading outcome. */
+.totals li {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--field);
+  border-left: 2px solid var(--line);
+  isolation: isolate;
+}
+
+.totals li::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: -1;
+  width: calc(var(--share, 0) * 100%);
+  background: linear-gradient(90deg, rgba(220, 120, 140, 0.12), rgba(220, 120, 140, 0.28));
+}
+
+.totals li.leading {
+  border-left-color: var(--gold);
+}
+
+.totals li.leading::before {
+  background: linear-gradient(90deg, rgba(232, 190, 106, 0.1), rgba(232, 190, 106, 0.32));
+}
+
+.totals strong {
+  font-family: var(--display);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .rider-result {
@@ -223,9 +598,38 @@ button.icon {
 }
 
 .tie-break {
-  border-color: var(--accent);
+  border-color: var(--gold-line);
 }
 
 .winner {
+  padding: 14px 16px;
   font-size: 1.1rem;
+  text-align: center;
+  border: 1px solid var(--gold-line);
+  background: radial-gradient(ellipse at 50% 0%, rgba(232, 190, 106, 0.16), transparent 70%);
+}
+
+.winner strong {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.3rem;
+  color: var(--gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .twinkle,
+  .title-name,
+  .galaxy-spin {
+    animation: none;
+  }
+
+  .layer {
+    transition: none;
+  }
+
+  button {
+    transition: none;
+  }
 }

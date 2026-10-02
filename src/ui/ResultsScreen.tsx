@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 import {
   AGENDA_COUNT,
   type RiderResult,
@@ -30,6 +30,7 @@ export function ResultsScreen({ session, onContinue }: { session: Session; onCon
   const result = agendaResult(totals, speakerChoice);
   const tied = result.leaders.length > 1;
   const lastAgenda = session.agendaNumber >= AGENDA_COUNT;
+  const mostVotes = Math.max(0, ...totals.values());
 
   return (
     <section className="card">
@@ -38,7 +39,11 @@ export function ResultsScreen({ session, onContinue }: { session: Session; onCon
       {outcomes.length ? (
         <ul className="totals">
           {[...totals].map(([outcome, votes]) => (
-            <li key={outcome}>
+            <li
+              key={outcome}
+              className={votes > 0 && votes === mostVotes ? "leading" : undefined}
+              style={{ "--share": mostVotes ? votes / mostVotes : 0 } as CSSProperties}
+            >
               <span>{outcome}</span>
               <strong>{votes}</strong>
             </li>
