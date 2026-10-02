@@ -20,8 +20,16 @@ names are converted to lowercase and stripped of non-alphanumeric characters for
 tallying, so differences in capitalization, spacing, or punctuation do not create
 separate outcomes.
 
-Hand the device to each named player when prompted. After everyone votes, return
-it to the speaker to reveal totals. Use the optional ballot breakdown only when
+When setting up each agenda, the speaker marks any players who publicly declared
+a rider and records each rider's predicted outcome. Rider players skip voting on
+that agenda and spend 0 votes; they can vote normally on the next agenda.
+
+Hand the device to each remaining player when prompted. On their ballot, a
+player chooses an outcome, their votes, and optional bonus votes (+x). Bonus
+votes are added to the outcome's total but do not use the player's remaining
+votes. After everyone votes, return
+it to the speaker to reveal totals and how each rider's prediction compares
+with the leading outcome. Use the optional ballot breakdown only when
 resolving an outcome requires it.
 
 Other commands:

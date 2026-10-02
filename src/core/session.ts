@@ -1,10 +1,11 @@
-import { AGENDA_COUNT, type Agenda, fixedOutcomes, normalizePlanet } from "./agenda";
+import { AGENDA_COUNT, type Agenda, resolveOutcome } from "./agenda";
 import { parsePlayerNames } from "./players";
-import { type Ballot, spendVotes } from "./tally";
+import { type Ballot, assertVoteCount, spendVotes } from "./tally";
 
 /**
- * Hot-seat flow for one agenda phase. Every transition is a pure function that
- * returns a new state or throws an Error describing invalid input. Ballots
+ * Hot-seat flow for one agenda phase. Players who declared a rider for the
+ * current agenda are skipped when handing the device around. Every transition is a pure
+ * function that returns a new state or throws an Error describing invalid input. Ballots
  * live only in memory and are discarded when the next agenda starts.
  */
 export type Phase =
@@ -49,12 +50,26 @@ export function startSession(players: string[], budgets: number[]): Session {
 
 export function setAgenda(session: Session, agenda: Agenda): Session {
   expectPhase(session, "agenda-setup");
-  return {
+  const riders = agenda.riders.map((rider) => ({
+    player: rider.player,
+    prediction: resolveOutcome(agenda.type, session.players, rider.prediction),
+  }));
+  const riderPlayers = new Set<string>();
+  for (const { player } of riders) {
+    if (!session.players.includes(player)) {
+      throw new Error(`Unknown player: ${player}`);
+    }
+    if (riderPlayers.has(player)) {
+      throw new Error(`${player} can only declare one rider per agenda`);
+    }
+    riderPlayers.add(player);
+  }
+  const started: Session = {
     ...session,
-    agenda: { title: agenda.title.trim(), type: agenda.type },
+    agenda: { title: agenda.title.trim(), type: agenda.type, riders },
     ballots: [],
-    phase: { name: "handoff", voter: 0 },
   };
+  return { ...started, phase: nextVoterPhase(started, 0) };
 }
 
 export function openBallot(session: Session): Session {
@@ -62,18 +77,19 @@ export function openBallot(session: Session): Session {
   return { ...session, phase: { name: "ballot", voter: phase.voter } };
 }
 
-export function castBallot(session: Session, outcome: string, votes: number): Session {
+export function castBallot(session: Session, outcome: string, votes: number, bonus = 0): Session {
   const phase = expectPhase(session, "ballot");
+  const agenda = requireAgenda(session);
   const player = session.players[phase.voter];
-  const resolved = resolveOutcome(session, outcome);
+  const resolved = resolveOutcome(agenda.type, session.players, outcome);
   const remaining = spendVotes(session.remaining[player], votes);
-  const next = phase.voter + 1;
-  return {
+  assertVoteCount(bonus, "Bonus votes");
+  const cast: Session = {
     ...session,
     remaining: { ...session.remaining, [player]: remaining },
-    ballots: [...session.ballots, { player, outcome: resolved, votes }],
-    phase: next < session.players.length ? { name: "handoff", voter: next } : { name: "speaker" },
+    ballots: [...session.ballots, { player, outcome: resolved, votes, bonus }],
   };
+  return { ...cast, phase: nextVoterPhase(cast, phase.voter + 1) };
 }
 
 export function revealResults(session: Session): Session {
@@ -100,22 +116,22 @@ export function currentVoter(session: Session): string | null {
   return phase.name === "handoff" || phase.name === "ballot" ? session.players[phase.voter] : null;
 }
 
-function resolveOutcome(session: Session, outcome: string): string {
+/** Hand the device to the next player at or after `from` who has no rider. */
+function nextVoterPhase(session: Session, from: number): Phase {
+  const riders = new Set(requireAgenda(session).riders.map((rider) => rider.player));
+  for (let voter = from; voter < session.players.length; voter++) {
+    if (!riders.has(session.players[voter])) {
+      return { name: "handoff", voter };
+    }
+  }
+  return { name: "speaker" };
+}
+
+function requireAgenda(session: Session): Agenda {
   if (!session.agenda) {
     throw new Error("No agenda is being voted on");
   }
-  const fixed = fixedOutcomes(session.agenda.type, session.players);
-  if (fixed === null) {
-    const planet = normalizePlanet(outcome);
-    if (!planet) {
-      throw new Error("Enter a planet name containing at least one letter or number");
-    }
-    return planet;
-  }
-  if (!fixed.includes(outcome)) {
-    throw new Error(`Unknown outcome: ${outcome}`);
-  }
-  return outcome;
+  return session.agenda;
 }
 
 function expectPhase<N extends Phase["name"]>(session: Session, name: N): Extract<Phase, { name: N }> {

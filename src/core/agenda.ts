@@ -10,9 +10,19 @@ export const AGENDA_TYPE_LABELS: Record<AgendaType, string> = {
   planet: "Pick a planet",
 };
 
+/**
+ * A rider is declared publicly before voting. The player predicts an outcome
+ * and does not vote on this agenda, spending 0 votes.
+ */
+export interface Rider {
+  player: string;
+  prediction: string;
+}
+
 export interface Agenda {
   title: string;
   type: AgendaType;
+  riders: Rider[];
 }
 
 /**
@@ -36,6 +46,25 @@ export function fixedOutcomes(type: AgendaType, players: string[]): string[] | n
  */
 export function normalizePlanet(entered: string): string {
   return entered.trim().toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+/**
+ * Validate an outcome chosen for an agenda and return it in canonical form.
+ * Planet names are normalized; fixed outcomes must match exactly.
+ */
+export function resolveOutcome(type: AgendaType, players: string[], outcome: string): string {
+  const fixed = fixedOutcomes(type, players);
+  if (fixed === null) {
+    const planet = normalizePlanet(outcome);
+    if (!planet) {
+      throw new Error("Enter a planet name containing at least one letter or number");
+    }
+    return planet;
+  }
+  if (!fixed.includes(outcome)) {
+    throw new Error(`Unknown outcome: ${outcome}`);
+  }
+  return outcome;
 }
 
 /** Return unique outcomes in the order they were first selected. */

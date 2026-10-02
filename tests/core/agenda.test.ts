@@ -31,9 +31,9 @@ describe("planets", () => {
 
   it("lets identical planet selections share an outcome", () => {
     const ballots = [
-      { player: "Alice", outcome: "mecatolrex", votes: 4 },
-      { player: "Bob", outcome: "mecatolrex", votes: 3 },
-      { player: "Cara", outcome: "primor", votes: 2 },
+      { player: "Alice", outcome: "mecatolrex", votes: 4, bonus: 0 },
+      { player: "Bob", outcome: "mecatolrex", votes: 3, bonus: 0 },
+      { player: "Cara", outcome: "primor", votes: 2, bonus: 0 },
     ];
     const outcomes = planetOutcomes(ballots);
     expect(outcomes).toEqual(["mecatolrex", "primor"]);
